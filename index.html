@@ -2,7 +2,7 @@
 <html class="no-js" lang="">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title></title>
     <style type="text/css">
       .playpause label {
@@ -36,6 +36,7 @@
       <input type="checkbox" value="None" id="playpause" name="check" checked />
       <label for="playpause" tabindex="1"></label>
     </div>
+    <div id="audiocontainer"></div>
   </body>
 
   <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
@@ -52,8 +53,15 @@
 
       buttonPaused();
 
+      $("#audiocontainer").html("");
+
       $.getJSON("playlist.json", (data) => {
         $("h1").append(data.title);
+
+        if (!data.tracks || !data.tracks.length) {
+          console.log("0 tracks in playlist!");
+          return;
+        }
 
         const items = [];
         $.each(data.tracks, (i, track) => {
@@ -68,8 +76,9 @@
 
         $("<div/>", {
           html: items.join(""),
-        }).appendTo("body");
+        }).appendTo("#audiocontainer");
 
+        // set track to move to next on end
         $.each(data.tracks, (i) => {
           if (i < data.tracks.length - 1) {
             $(`#track_${i}`).on("ended", () => {
@@ -78,7 +87,14 @@
           }
         });
 
-        let currentTrack = "track_0";
+        const firstTrackId = "track_0";
+
+        let currentTrack = firstTrackId;
+
+        //when last track ends, set first track to play next.
+        $(`#track_${data.tracks.length - 1}`).on("ended", () => {
+          currentTrack = firstTrackId;
+        });
 
         // main button cick handler
         $("#playpause").on("click", (e) => {
@@ -96,6 +112,7 @@
           currentTrack = e.target.id;
 
           // turn of all other tracks
+          // note: need to use "function" syntax for proper "this" handling.
           $("audio").each(function () {
             const audio = this;
             if (audio.id !== currentTrack) {
