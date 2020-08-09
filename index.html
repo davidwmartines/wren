@@ -51,6 +51,12 @@
         $("#playpause").prop("checked", true);
       };
 
+      const getNextTrackId = (current) => {
+        const currentIndex = parseInt(current.split("_")[1]);
+        const nextIndex = currentIndex + 1;
+        return `track_${nextIndex}`;
+      };
+
       buttonPaused();
 
       $("#audiocontainer").html("");
@@ -78,27 +84,14 @@
           html: items.join(""),
         }).appendTo("#audiocontainer");
 
-        // set track to move to next on end
-        $.each(data.tracks, (i) => {
-          if (i < data.tracks.length - 1) {
-            $(`#track_${i}`).on("ended", () => {
-              $(`#track_${i + 1}`)[0].play();
-            });
-          }
-        });
-
         const firstTrackId = "track_0";
+        const lastTrackId = `track_${data.tracks.length - 1}`;
 
-        let currentTrack = firstTrackId;
-
-        //when last track ends, set first track to play next.
-        $(`#track_${data.tracks.length - 1}`).on("ended", () => {
-          currentTrack = firstTrackId;
-        });
+        let currentTrackId = firstTrackId;
 
         // main button cick handler
         $("#playpause").on("click", (e) => {
-          const audio = $(`#${currentTrack}`)[0];
+          const audio = $(`#${currentTrackId}`)[0];
           if (e.target.checked) {
             audio.pause();
           } else {
@@ -109,13 +102,13 @@
         // any time a track starts playing
         $("audio").on("play", (e) => {
           buttonPlaying();
-          currentTrack = e.target.id;
+          currentTrackId = e.target.id;
 
           // turn of all other tracks
           // note: need to use "function" syntax for proper "this" handling.
           $("audio").each(function () {
             const audio = this;
-            if (audio.id !== currentTrack) {
+            if (audio.id !== currentTrackId) {
               audio.pause();
             }
           });
@@ -123,10 +116,28 @@
 
         // any time a track pauses
         $("audio").on("pause", (e) => {
-          // set button to paused current track is pausing.
-          if (e.target.id === currentTrack) {
+          // set button to paused if current track is pausing.
+          if (e.target.id === currentTrackId) {
             buttonPaused();
           }
+        });
+
+        // when a track ends
+        $("audio").on("ended", (e) => {
+          // queue up next track
+          if (e.target.id !== lastTrackId) {
+            currentTrackId = getNextTrackId(currentTrackId);
+          }
+
+          // queue up first track again
+          if (e.target.id === lastTrackId) {
+            currentTrackId = firstTrackId;
+          }
+
+          // play next
+          const currentAudio = $(`#${currentTrackId}`)[0];
+          currentAudio.currentTime = 0;
+          currentAudio.play();
         });
       });
     });
