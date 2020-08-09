@@ -164,6 +164,20 @@
           e.preventDefault();
           loadPlaylist(e.target.href);
         });
+
+        // try to auto load a playlist from url
+        const params = new URLSearchParams(location.search);
+        const targetListName = params.get("playlist");
+        console.log(`targetListName ${targetListName}`);
+        if (targetListName) {
+          const targetList = data.playlists.filter(
+            (list) => list.title.toLowerCase() === targetListName.toLowerCase()
+          );
+          console.log(targetList);
+          if (targetList) {
+            loadPlaylist(targetList[0]);
+          }
+        }
       });
     });
   </script>
