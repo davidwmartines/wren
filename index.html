@@ -25,7 +25,16 @@
         border-width: 37px 0 37px 60px;
       }
       .playpause input[type="checkbox"]:focus + label {
-        box-shadow: 0 0 5px lightblue;
+        box-shadow: 0 0 5px chartreuse;
+      }
+      .currenttrack {
+        background-color: chartreuse;
+      }
+      .trackbox {
+        padding: 2px 5px 15px;
+      }
+      #audiocontainer {
+        padding: 10px 0;
       }
     </style>
   </head>
@@ -76,11 +85,11 @@
           const items = [];
           $.each(data.tracks, (i, track) => {
             items.push(`
-          <div>
+          <div class="trackbox">
             <h4>${track.title}</h4>
             <div>
               <audio id="track_${i}" controls><source src="${track.url}"></audio>
-            </div
+            </div>
           </div>`);
           });
 
@@ -108,12 +117,15 @@
             buttonPlaying();
             currentTrackId = e.target.id;
 
+            $(e.target).parent().parent().addClass("currenttrack");
+
             // turn of all other tracks
             // note: need to use "function" syntax for proper "this" handling.
             $("audio").each(function () {
               const audio = this;
               if (audio.id !== currentTrackId) {
                 audio.pause();
+                $(audio).parent().parent().removeClass("currenttrack");
               }
             });
           });
@@ -128,6 +140,8 @@
 
           // when a track ends
           $("audio").on("ended", (e) => {
+            $(e.target).parent().parent().removeClass("currenttrack");
+
             // queue up next track
             if (e.target.id !== lastTrackId) {
               currentTrackId = getNextTrackId(currentTrackId);
