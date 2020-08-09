@@ -161,7 +161,9 @@
           $(".playpause").show();
 
           //start playing first track!
-          $(`#${currentTrackId}`)[0].play();
+          $(`#${currentTrackId}`)[0]
+            .play()
+            .catch((e) => console.log(e.toString()));
         });
       };
 
@@ -186,7 +188,6 @@
           const targetList = data.playlists.filter(
             (list) => list.title.toLowerCase() === targetListName.toLowerCase()
           );
-          console.log(targetList);
           if (targetList) {
             loadPlaylist(targetList[0]);
           }
