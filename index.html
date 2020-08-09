@@ -41,64 +41,76 @@
 
   <script>
     $(() => {
-      $.getJSON(
-        "playlist.json",
-        (data) => {
+      const buttonPlaying = () => {
+        $("#playpause").prop("checked", false);
+      };
 
-          $('h1').append(data.title);
+      const buttonPaused = () => {
+        $("#playpause").prop("checked", true);
+      };
 
-          const items = [];
-          $.each(data.tracks, (i, track) => {
-            items.push(`
+      buttonPaused();
+
+      $.getJSON("playlist.json", (data) => {
+        $("h1").append(data.title);
+
+        const items = [];
+        $.each(data.tracks, (i, track) => {
+          items.push(`
           <div>
             <h4>${track.title}</h4>
             <div>
               <audio id="track_${i}" controls><source src="${track.url}"></audio>
             </div
           </div>`);
-          });
+        });
 
-          $("<div/>", {
-            html: items.join(""),
-          }).appendTo("body");
+        $("<div/>", {
+          html: items.join(""),
+        }).appendTo("body");
 
-          $.each(data.tracks, (i) => {
-            if (i < data.tracks.length - 1) {
-              $(`#track_${i}`).on("ended", () => {
-                $(`#track_${i + 1}`)[0].play();
-              });
+        $.each(data.tracks, (i) => {
+          if (i < data.tracks.length - 1) {
+            $(`#track_${i}`).on("ended", () => {
+              $(`#track_${i + 1}`)[0].play();
+            });
+          }
+        });
+
+        let currentTrack = "track_0";
+
+        // main button cick handler
+        $("#playpause").on("click", (e) => {
+          const audio = $(`#${currentTrack}`)[0];
+          if (e.target.checked) {
+            audio.pause();
+          } else {
+            audio.play();
+          }
+        });
+
+        // any time a track starts playing
+        $("audio").on("play", (e) => {
+          buttonPlaying();
+          currentTrack = e.target.id;
+
+          // turn of all other tracks
+          $("audio").each(function () {
+            const audio = this;
+            if (audio.id !== currentTrack) {
+              audio.pause();
             }
           });
+        });
 
-          let currentTrack = "track_0";
-
-          $("#playpause").on("click", (e) => {
-            const track = $(`#${currentTrack}`)[0];
-            if (e.target.checked) {
-              track.pause();
-            } else {
-              track.play();
-            }
-          });
-
-          $("audio").on("play", (e) => {
-            $("#playpause").prop("checked", false);
-            currentTrack = e.target.id;
-            
-            // $("audio").each(() => {
-            //   const a = $(this);
-            //   if (a.id != currentTrack) {
-            //     $(a).pause();
-            //   }
-            // });
-            
-          });
-
-          $("audio").on("pause", (e) => {
-            $("#playpause").prop("checked", true);
-          });
-        }
-      );
+        // any time a track pauses
+        $("audio").on("pause", (e) => {
+          // set button to paused current track is pausing.
+          if (e.target.id === currentTrack) {
+            buttonPaused();
+          }
+        });
+      });
     });
   </script>
 </html>
