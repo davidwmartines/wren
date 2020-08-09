@@ -31,6 +31,7 @@
   </head>
 
   <body>
+    <div id="listscontainer"></div>
     <h1></h1>
     <div class="playpause">
       <input type="checkbox" value="None" id="playpause" name="check" checked />
@@ -59,85 +60,109 @@
 
       buttonPaused();
 
-      $("#audiocontainer").html("");
+      $(".playpause").hide();
 
-      $.getJSON("playlist.json", (data) => {
-        $("h1").append(data.title);
+      const loadPlaylist = (playlistUrl) => {
+        $.getJSON(playlistUrl, (data) => {
+          buttonPaused();
+          $("#audiocontainer").text("");
+          $("h1").text(data.title);
 
-        if (!data.tracks || !data.tracks.length) {
-          console.log("0 tracks in playlist!");
-          return;
-        }
+          if (!data.tracks || !data.tracks.length) {
+            console.log("0 tracks in playlist!");
+            return;
+          }
 
-        const items = [];
-        $.each(data.tracks, (i, track) => {
-          items.push(`
+          const items = [];
+          $.each(data.tracks, (i, track) => {
+            items.push(`
           <div>
             <h4>${track.title}</h4>
             <div>
               <audio id="track_${i}" controls><source src="${track.url}"></audio>
             </div
           </div>`);
-        });
+          });
 
-        $("<div/>", {
-          html: items.join(""),
-        }).appendTo("#audiocontainer");
+          $("<div/>", {
+            html: items.join(""),
+          }).appendTo("#audiocontainer");
 
-        const firstTrackId = "track_0";
-        const lastTrackId = `track_${data.tracks.length - 1}`;
+          const firstTrackId = "track_0";
+          const lastTrackId = `track_${data.tracks.length - 1}`;
 
-        let currentTrackId = firstTrackId;
+          let currentTrackId = firstTrackId;
 
-        // main button cick handler
-        $("#playpause").on("click", (e) => {
-          const audio = $(`#${currentTrackId}`)[0];
-          if (e.target.checked) {
-            audio.pause();
-          } else {
-            audio.play();
-          }
-        });
-
-        // any time a track starts playing
-        $("audio").on("play", (e) => {
-          buttonPlaying();
-          currentTrackId = e.target.id;
-
-          // turn of all other tracks
-          // note: need to use "function" syntax for proper "this" handling.
-          $("audio").each(function () {
-            const audio = this;
-            if (audio.id !== currentTrackId) {
+          // main button cick handler
+          $("#playpause").on("click", (e) => {
+            const audio = $(`#${currentTrackId}`)[0];
+            if (e.target.checked) {
               audio.pause();
+            } else {
+              audio.play();
             }
           });
+
+          // any time a track starts playing
+          $("audio").on("play", (e) => {
+            buttonPlaying();
+            currentTrackId = e.target.id;
+
+            // turn of all other tracks
+            // note: need to use "function" syntax for proper "this" handling.
+            $("audio").each(function () {
+              const audio = this;
+              if (audio.id !== currentTrackId) {
+                audio.pause();
+              }
+            });
+          });
+
+          // any time a track pauses
+          $("audio").on("pause", (e) => {
+            // set button to paused if current track is pausing.
+            if (e.target.id === currentTrackId) {
+              buttonPaused();
+            }
+          });
+
+          // when a track ends
+          $("audio").on("ended", (e) => {
+            // queue up next track
+            if (e.target.id !== lastTrackId) {
+              currentTrackId = getNextTrackId(currentTrackId);
+            }
+
+            // queue up first track again
+            if (e.target.id === lastTrackId) {
+              currentTrackId = firstTrackId;
+            }
+
+            // play next
+            const currentAudio = $(`#${currentTrackId}`)[0];
+            currentAudio.currentTime = 0;
+            currentAudio.play();
+          });
+
+          $(".playpause").show();
+
+          //start playing first track!
+          $(`#${currentTrackId}`)[0].play();
         });
+      };
 
-        // any time a track pauses
-        $("audio").on("pause", (e) => {
-          // set button to paused if current track is pausing.
-          if (e.target.id === currentTrackId) {
-            buttonPaused();
-          }
-        });
+      $.getJSON("playlists.json", (data) => {
+        const menuItems = data.playlists
+          .map((list) => {
+            return `<a class="playlist_link" href="${list.url}">${list.title}</a>`;
+          })
+          .join("|");
 
-        // when a track ends
-        $("audio").on("ended", (e) => {
-          // queue up next track
-          if (e.target.id !== lastTrackId) {
-            currentTrackId = getNextTrackId(currentTrackId);
-          }
+        $("#listscontainer").append(menuItems);
 
-          // queue up first track again
-          if (e.target.id === lastTrackId) {
-            currentTrackId = firstTrackId;
-          }
-
-          // play next
-          const currentAudio = $(`#${currentTrackId}`)[0];
-          currentAudio.currentTime = 0;
-          currentAudio.play();
+        $(".playlist_link").on("click", (e) => {
+          e.preventDefault();
+          loadPlaylist(e.target.href);
         });
       });
     });

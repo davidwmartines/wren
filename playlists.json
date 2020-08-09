@@ -1,0 +1,6 @@
+{
+  "playlists": [
+    { "title": "Solos", "url": "/solos/playlist.json" },
+    { "title": "Sketches 2019", "url": "/sketches/playlist.json" }
+  ]
+}
