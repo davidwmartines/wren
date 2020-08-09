@@ -42,9 +42,11 @@
   <script>
     $(() => {
       $.getJSON(
-        "https://dxffd4gk9zzvk2.s3.us-east-2.amazonaws.com/solos/playlist.json",
+        "playlist.json",
         (data) => {
+
           $('h1').append(data.title);
+
           const items = [];
           $.each(data.tracks, (i, track) => {
             items.push(`
