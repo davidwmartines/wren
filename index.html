@@ -53,6 +53,10 @@
 
   <script>
     $(() => {
+
+      const firstTrackId = "track_0";
+      let currentTrackId = firstTrackId;
+
       const buttonPlaying = () => {
         $("#playpause").prop("checked", false);
       };
@@ -71,7 +75,7 @@
 
       $(".playpause").hide();
 
-      const loadPlaylist = (playlistUrl) => {
+      const loadPlaylist = (playlistUrl, startTrackName) => {
         $.getJSON(playlistUrl, (data) => {
           buttonPaused();
           $("#audiocontainer").text("");
@@ -97,26 +101,25 @@
             html: items.join(""),
           }).appendTo("#audiocontainer");
 
-          const firstTrackId = "track_0";
           const lastTrackId = `track_${data.tracks.length - 1}`;
+          currentTrackId = firstTrackId;
 
-          let currentTrackId = firstTrackId;
-
-          // main button cick handler
-          $("#playpause").on("click", (e) => {
-            const audio = $(`#${currentTrackId}`)[0];
-            if (e.target.checked) {
-              audio.pause();
-            } else {
-              audio.play();
+          if (startTrackName) {
+            const startTrackIndex = data.tracks.findIndex(
+              ({ title }) =>
+                title.toLowerCase() === startTrackName.toLowerCase()
+            );
+            if (startTrackIndex && startTrackIndex >= 0) {
+              currentTrackId = `track_${startTrackIndex}`;
             }
-          });
+          }
 
           // any time a track starts playing
           $("audio").on("play", (e) => {
             buttonPlaying();
             currentTrackId = e.target.id;
 
+            $(e.target).focus();
             $(e.target).parent().parent().addClass("currenttrack");
 
             // turn of all other tracks
@@ -160,7 +163,7 @@
 
           $(".playpause").show();
 
-          //start playing first track!
+          // try to start playing selected track!
           $(`#${currentTrackId}`)[0]
             .play()
             .catch((e) => console.log(e.toString()));
@@ -181,7 +184,7 @@
           loadPlaylist(e.target.href);
         });
 
-        // try to auto load a playlist from url
+        // try to auto load a playlist or track from url
         const params = new URLSearchParams(location.search);
         const targetListName = params.get("playlist");
         if (targetListName) {
@@ -189,8 +192,19 @@
             (list) => list.title.toLowerCase() === targetListName.toLowerCase()
           );
           if (targetList) {
-            loadPlaylist(targetList[0]);
+            loadPlaylist(targetList[0], params.get("track"));
           }
+        }
+      });
+
+      // main button cick handler
+      $("#playpause").on("click", (e) => {
+        console.log("track", currentTrackId);
+        const audio = $(`#${currentTrackId}`)[0];
+        if (e.target.checked) {
+          audio.pause();
+        } else {
+          audio.play();
         }
       });
     });
